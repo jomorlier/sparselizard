@@ -115,8 +115,8 @@ class elements
         std::vector<bool> isflipped(int subelementtypenumber, std::vector<int>& subelementnumbers, int elementtypenumber, std::vector<int>& elementnumbers);
         
         // 'isinelementlist[i]' is true if the ith element of type 'elementtypenumber' is a (sub-)element of the element list.
-        // The number of true entries in 'isinelementlist' is returned. Curvature nodes are NOT considered.
-        int istypeinelementlist(int elementtypenumber, std::vector<std::vector<int>>* elementlist, std::vector<bool>& isinelementlist);
+        // The number of true entries in 'isinelementlist' is returned.
+        int istypeinelementlist(int elementtypenumber, std::vector<std::vector<int>>* elementlist, std::vector<bool>& isinelementlist, bool considercurvaturenodes);
         
         // Return the number of elements of a given type:
         int count(int elementtypenumber);

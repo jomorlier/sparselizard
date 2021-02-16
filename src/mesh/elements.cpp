@@ -147,15 +147,20 @@ std::vector<bool> elements::isflipped(int subelementtypenumber, std::vector<int>
     return output;
 }
 
-int elements::istypeinelementlist(int elementtypenumber, std::vector<std::vector<int>>* elementlist, std::vector<bool>& isinelementlist)
+int elements::istypeinelementlist(int elementtypenumber, std::vector<std::vector<int>>* elementlist, std::vector<bool>& isinelementlist, bool considercurvaturenodes)
 {
     isinelementlist = std::vector<bool>(count(elementtypenumber), false);
 
     int numinlist = 0;
     for (int i = 0; i < 8; i++)
     {
-        element el(i);
-        int ns = el.counttype(elementtypenumber);
+        element el(i, mycurvatureorder);
+        int ns;
+        if (elementtypenumber == 0 && considercurvaturenodes)
+            ns = el.countcurvednodes();
+        else
+            ns = el.counttype(elementtypenumber);
+            
         if (ns == 0)
             continue;
 
@@ -1090,7 +1095,7 @@ void elements::follow(std::vector<std::vector<int>>* elementlist, int subtype, s
 
     std::vector<bool> issuballowed;
     if (mustbeinelementlist != NULL)
-        istypeinelementlist(subtype, mustbeinelementlist, issuballowed);
+        istypeinelementlist(subtype, mustbeinelementlist, issuballowed, false);
 
     int index = 0;
     for (int i = 0; i < 8; i++)
