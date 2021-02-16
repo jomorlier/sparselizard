@@ -1435,3 +1435,77 @@ void elements::merge(elements* elstomerge, std::vector<std::vector<int>>& renumb
     }
 }
 
+void elements::merge(int intersectionphysreg, elements* elstomerge)
+{
+    int meshdim = getdimension();
+    int prdim = myphysicalregions->get(intersectionphysreg)->getelementdimension(); // can be celldim-1 or lower dim
+    std::vector<std::vector<int>>* elementlist = myphysicalregions->get(intersectionphysreg)->getelementlist();
+
+    std::vector<int> numineachtype = count(); // curvature nodes are included
+    std::vector<int> numduplicates(8, 0);
+    // Renumbering of each element to merge:
+    std::vector<std::vector<int>> renumberings(8, std::vector<int>(0));
+    
+    for (int i = 0; i < 8; i++)
+    {   
+        int numelstomerge = elstomerge->count(i);
+        if (numelstomerge == 0)
+            continue;
+     
+        element el(i);
+        int eldim = el.getelementdimension();
+        // No duplicate check for cells:
+        if (eldim >= meshdim)
+        {
+            renumberings[i] = myalgorithm::getequallyspaced(numineachtype[i], 1, numelstomerge);
+            continue;
+        }
+
+        // Get the barycenters in this object for the current element type:
+        std::vector<bool> isinelementlist;
+        int cnt = istypeinelementlist(i, elementlist, isinelementlist, true);
+        std::vector<int> targetelemnums;
+        myalgorithm::find(isinelementlist, cnt, targetelemnums);
+        std::vector<double> targetbarys;
+        getbarycenters(i, targetelemnums, targetbarys);
+        
+        int numtargetels = targetelemnums.size();
+        
+        // Get the barycenters of the elements to merge:
+        std::vector<double> barystomerge;
+        std::vector<int> allelems = myalgorithm::getequallyspaced(0, 1, numelstomerge);
+        elstomerge->getbarycenters(i, allelems, barystomerge);
+        
+        // Bring all coordinates in one vector:
+        std::vector<double> allcoords(targetbarys.size()+barystomerge.size());
+        for (int j = 0; j < targetbarys.size(); j++)
+            allcoords[j] = targetbarys[j];
+        for (int j = 0; j < barystomerge.size(); j++)
+            allcoords[targetbarys.size()+j] = barystomerge[j];
+        
+        // Create the renumbering of the elements to merge:
+        std::vector<int> rv;
+        int numnondupltomerge = myalgorithm::removeduplicates(allcoords, rv) - numtargetels;
+        numduplicates[i] = numelstomerge - numnondupltomerge;
+        std::vector<int> assignednum(numtargetels+numelstomerge, -1);
+        for (int j = 0; j < numtargetels; j++)
+            assignednum[rv[j]] = targetelemnums[j];
+        int index = 0;
+        for (int j = 0; j < numelstomerge; j++)
+        {
+            int renum = rv[numtargetels+j];
+            if (assignednum[renum] == -1)
+            {
+                assignednum[renum] = numineachtype[i]+index;
+                index++;
+            }
+        }
+        
+        renumberings[i] = std::vector<int>(numelstomerge);
+        for (int j = 0; j < numelstomerge; j++)
+            renumberings[i][j] = assignednum[rv[numtargetels+j]];
+    }
+    
+    merge(elstomerge, renumberings, numduplicates);
+}
+
